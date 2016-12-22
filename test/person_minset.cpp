@@ -40,8 +40,8 @@ void detectionCallback(const realsense_person::PersonDetection &msg)
 
   for (realsense_person::Person person: msg.persons)
   {
-    if ((person.bounding_box.x != 0) || (person.bounding_box.y != 0) ||
-        (person.bounding_box.w != 0) || (person.bounding_box.h != 0))
+    if ((person.bounding_box.top_left.x != 0) || (person.bounding_box.top_left.y != 0) ||
+        (person.bounding_box.bottom_right.x != 0) || (person.bounding_box.bottom_right.y != 0))
     {
       g_detection_bbox_recv = true;
     }
@@ -52,7 +52,7 @@ void detectionCallback(const realsense_person::PersonDetection &msg)
 
     if ((person.center_of_mass.world.x != 0) || (person.center_of_mass.world.y != 0) ||
         (person.center_of_mass.world.z != 0) || (person.center_of_mass.image.x != 0) ||
-        (person.center_of_mass.image.y != 0) || (person.center_of_mass.image.z != 0))
+        (person.center_of_mass.image.y != 0))
     {
       g_detection_com_recv = true;
     }

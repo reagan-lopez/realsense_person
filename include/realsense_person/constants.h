@@ -71,20 +71,20 @@ namespace realsense_person
       "Face Not Detected", "Face Not Clear", "Person Too Far", "Person Too Close"};
   const std::string RECOGNITION_DESC[8] = {"Recognition Successful", "Not Recognized", "Failed", "Face Not Detected",
       "Face Not Clear", "Person Too Far", "Person Too Close", "Face Ambiguity"};
-  const std::string ORIENTATION_DESC[6] = {"Frontal", "45 degree right", "45 degree left", "Right", "Left", "Rear"};
-  const std::string JOINT_TYPE_DESC[25] = {"joint ankle left", "joint ankle right", "joint elbow left",
-      "joint elbow right", "joint foot left", "joint foot right", "joint hand left", "joint hand right",
-      "joint hand tip left", "joint hand tip right", "joint head", "joint hip left", "joint hip right",
-      "joint knee left", "joint knee right", "joint neck", "joint shoulder left", "joint shoulder right",
-      "joint spine base", "joint spine mid", "joint spine shoulder", "joint thumb left", "joint thumb right",
-      "joint wrist left", "joint wrist right"};
+  const std::string ORIENTATION_DESC[6] = {"frontal", "45_degree_right", "45_degree_left", "right", "left", "rear"};
+  const std::string JOINT_TYPE_DESC[25] = {"joint_ankle_left", "joint_ankle_right", "joint_elbow_left",
+      "joint_elbow_right", "joint_foot_left", "joint_foot_right", "joint_hand_left", "joint_hand_right",
+      "joint_hand_tip_left", "joint_hand_tip_right", "joint_head", "joint_hip_left", "joint_hip_right",
+      "joint_knee_left", "joint_knee_right", "joint_neck", "joint_shoulder_left", "joint_shoulder_right",
+      "joint_spine_base", "joint_spine_mid", "joint_spine_shoulder", "joint_thumb_left", "joint_thumb_right",
+      "joint_wrist_left", "joint_wrist_right"};
 
-  const float HEAD_BOUNDING_BOX_THR = 50.0f; // TODO: Person MW team to make this a public constant
-  const float ORIENTATION_CONFIDENCE_THR = 1.0f; // TODO: Person MW team to make this a public constant
-  const float LANDMARKS_CONFIDENCE_THR = 50.0f;  // TODO: Person MW team to make this a public constant
-  const float SKELETON_POINT_CONFIDENCE_THR = 50.0f; // TODO: Person MW team to make this a public constant
+  const int32_t ORIENTATION_CONFIDENCE_THRESHOLD = 1; // TODO: Review the ideal threshold value
+  const int32_t HEAD_BOX_CONFIDENCE_THRESHOLD = 50; // TODO: Review the ideal threshold value
+  const int32_t LANDMARKS_CONFIDENCE_THRESHOLD = 50;  // TODO: Review the ideal threshold value
+  const int32_t GESTURE_CONFIDENCE_THRESHOLD = 0; // TODO: Review the ideal threshold value
+  const int32_t SKELETON_CONFIDENCE_THRESHOLD = 50; // TODO: Review the ideal threshold value
 
   const wchar_t* PERSON_MODULE_DATA_PATH = L"/usr/share/librealsense/pt/data/";
-
 }
 #endif

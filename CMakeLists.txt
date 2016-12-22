@@ -47,15 +47,17 @@ generate_dynamic_reconfigure_options(
 
 add_message_files(
   FILES
-  BoundingBox.msg
-  RegisteredPoint.msg
+  PersonDetection.msg
+  PersonTracking.msg
   PersonId.msg
   Person.msg
-  PersonDetection.msg
-  PersonFace.msg
-  PersonSkeleton.msg
-  PersonBody.msg
-  PersonTracking.msg
+  Face.msg
+  Body.msg
+  Gesture.msg
+  SkeletonJoint.msg
+  BoundingBox.msg
+  RegisteredPoint.msg
+  Pixel.msg
 )
 
 add_service_files(
