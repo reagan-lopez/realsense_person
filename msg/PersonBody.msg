@@ -1,5 +1,0 @@
-realsense_person/PersonSkeleton[] skeleton
-realsense_person/RegisteredPoint gesture_origin
-realsense_person/RegisteredPoint gesture_direction
-int32 gesture_confidence
-

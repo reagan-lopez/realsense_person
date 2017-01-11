@@ -121,33 +121,6 @@ namespace realsense_person
       pt_video_module_->QueryConfiguration()->QueryRecognition()->Disable();
     }
 
-/*  TODO: Enable modifying these parameters once they are implemented.
-    if ((config.enable_skeleton_joints) &&
-        (!pt_video_module_->QueryConfiguration()->QuerySkeletonJoints()->IsEnabled()))
-    {
-      ROS_INFO_STREAM(nodelet_name_ << " - Enabling skeleton joints");
-      pt_video_module_->QueryConfiguration()->QuerySkeletonJoints()->Enable();
-    }
-    else if ((!config.enable_skeleton_joints) &&
-        (pt_video_module_->QueryConfiguration()->QuerySkeletonJoints()->IsEnabled()))
-    {
-      ROS_INFO_STREAM(nodelet_name_ << " - Disabling skeleton joints");
-      pt_video_module_->QueryConfiguration()->QuerySkeletonJoints()->Disable();
-    }
-
-    if ((config.enable_gestures) &&
-        (!pt_video_module_->QueryConfiguration()->QueryGestures()->IsEnabled()))
-    {
-      ROS_INFO_STREAM(nodelet_name_ << " - Enabling gestures");
-      pt_video_module_->QueryConfiguration()->QueryGestures()->Enable();
-    }
-    else if ((!config.enable_gestures) &&
-        (pt_video_module_->QueryConfiguration()->QueryGestures()->IsEnabled()))
-    {
-      ROS_INFO_STREAM(nodelet_name_ << " - Disabling gestures");
-      pt_video_module_->QueryConfiguration()->QueryGestures()->Disable();
-    }
-
     if ((config.enable_orientation) &&
         (!pt_video_module_->QueryConfiguration()->QueryTracking()->IsPersonOrientationEnabled()))
     {
@@ -199,7 +172,33 @@ namespace realsense_person
       ROS_INFO_STREAM(nodelet_name_ << " - Disabling face landmarks");
       pt_video_module_->QueryConfiguration()->QueryTracking()->DisableFaceLandmarks();
     }
-*/
+
+    if ((config.enable_gestures) &&
+        (!pt_video_module_->QueryConfiguration()->QueryGestures()->IsEnabled()))
+    {
+      ROS_INFO_STREAM(nodelet_name_ << " - Enabling gestures");
+      pt_video_module_->QueryConfiguration()->QueryGestures()->Enable();
+    }
+    else if ((!config.enable_gestures) &&
+        (pt_video_module_->QueryConfiguration()->QueryGestures()->IsEnabled()))
+    {
+      ROS_INFO_STREAM(nodelet_name_ << " - Disabling gestures");
+      pt_video_module_->QueryConfiguration()->QueryGestures()->Disable();
+    }
+
+    if ((config.enable_skeleton_joints) &&
+        (!pt_video_module_->QueryConfiguration()->QuerySkeletonJoints()->IsEnabled()))
+    {
+      ROS_INFO_STREAM(nodelet_name_ << " - Enabling skeleton joints");
+      pt_video_module_->QueryConfiguration()->QuerySkeletonJoints()->Enable();
+    }
+    else if ((!config.enable_skeleton_joints) &&
+        (pt_video_module_->QueryConfiguration()->QuerySkeletonJoints()->IsEnabled()))
+    {
+      ROS_INFO_STREAM(nodelet_name_ << " - Disabling skeleton joints");
+      pt_video_module_->QueryConfiguration()->QuerySkeletonJoints()->Disable();
+    }
+
   }
 
   /*
@@ -224,10 +223,8 @@ namespace realsense_person
     detection_pub_ = person_nh.advertise<realsense_person::PersonDetection>(DETECTION_TOPIC, 1);
     detection_image_pub_ = person_nh.advertise<sensor_msgs::Image>(DETECTION_IMAGE_TOPIC, 1);
 
-/*  TODO: Advertise these topics once they are implemented in the next release.
     tracking_pub_ = person_nh.advertise<realsense_person::PersonTracking>(TRACKING_TOPIC, 1);
     tracking_image_pub_ = person_nh.advertise<sensor_msgs::Image>(TRACKING_IMAGE_TOPIC, 1);
-*/
   }
 
   /*
@@ -250,6 +247,10 @@ namespace realsense_person
   {
     tracking_id_server_ = pnh_.advertiseService(realsense_person::GET_TRACKING_ID_SERVICE,
         &PersonNodelet::getTrackingIdServiceHandler, this);
+    start_tracking_server_ = pnh_.advertiseService(realsense_person::START_TRACKING_SERVICE,
+        &PersonNodelet::startTrackingServiceHandler, this);
+    stop_tracking_server_ = pnh_.advertiseService(realsense_person::STOP_TRACKING_SERVICE,
+        &PersonNodelet::stopTrackingServiceHandler, this);
     register_server_ = pnh_.advertiseService(realsense_person::REGISTER_SERVICE,
         &PersonNodelet::registerServiceHandler, this);
     recognize_server_ = pnh_.advertiseService(realsense_person::RECOGNIZE_SERVICE,
@@ -258,10 +259,6 @@ namespace realsense_person
         &PersonNodelet::reinforceServiceHandler, this);
 
 /*  TODO: Adverstise these services once they are implemented in the next release.
-    start_tracking_server_ = pnh_.advertiseService(realsense_person::START_TRACKING_SERVICE,
-        &PersonNodelet::startTrackingServiceHandler, this);
-    stop_tracking_server_ = pnh_.advertiseService(realsense_person::STOP_TRACKING_SERVICE,
-        &PersonNodelet::stopTrackingServiceHandler, this);
     serialize_server_ = pnh_.advertiseService(realsense_person::SERIALIZE_SERVICE,
         &PersonNodelet::serializeServiceHandler, this);
     deserialize_server_ = pnh_.advertiseService(realsense_person::DESERIALIZE_SERVICE,
@@ -451,18 +448,15 @@ namespace realsense_person
     PersonTracking tracking_msg;
     ros::Time header_stamp = ros::Time::now();
 
-    int detected_person_cnt = person_data->QueryNumberOfPeople();
+    auto detected_person_cnt = person_data->QueryNumberOfPeople();
     if (detected_person_cnt > 0)
     {
       for (int i = 0; i < detected_person_cnt; ++i)
       {
-        PersonModule::PersonTrackingData::Person* single_person_data =
+        auto single_person_data =
             person_data->QueryPersonData(PersonModule::PersonTrackingData::ACCESS_ORDER_BY_ID, i);
-        PersonModule::PersonTrackingData::PersonTracking* detection_data = single_person_data->QueryTracking();
-        int tracking_id = detection_data->QueryId();
-        PersonModule::PersonTrackingData::BoundingBox2D b_box = detection_data->Query2DBoundingBox();
-        PersonModule::PersonTrackingData::PointCombined com = detection_data->QueryCenterMass();
-        Person person_msg = preparePersonMsg(tracking_id, b_box, com);
+        auto detection_data = single_person_data->QueryTracking();
+        Person person_msg = preparePersonMsg(detection_data);
 
         if (publish_detection_ || publish_detection_image_)
         {
@@ -470,12 +464,13 @@ namespace realsense_person
           detection_msg.persons.push_back(person_msg);
         }
 
-        if ((publish_tracking_ || publish_tracking_image_) && (tracking_id_ == tracking_id))
+        if ((publish_tracking_ || publish_tracking_image_) && (tracking_id_ == detection_data->QueryId()))
         {
           last_tracking_time_ = msg_received_time;
           tracking_msg.person = person_msg;
-          tracking_msg.person_face = preparePersonFaceMsg(tracking_id_, detection_data, single_person_data);
-          tracking_msg.person_body = preparePersonBodyMsg(tracking_id_, single_person_data);
+          tracking_msg.face = prepareFaceMsg(single_person_data);
+          tracking_msg.body = prepareBodyMsg(single_person_data);
+
         }
       }
     }
@@ -539,36 +534,252 @@ namespace realsense_person
   /*
    * Prepare Person Message.
    */
-  Person PersonNodelet::preparePersonMsg(int tracking_id, PersonModule::PersonTrackingData::BoundingBox2D b_box,
-      PersonModule::PersonTrackingData::PointCombined com)
+  Person PersonNodelet::preparePersonMsg(PersonModule::PersonTrackingData::PersonTracking* detection_data)
   {
     Person person_msg;
-    PersonId person_id_msg;
-    BoundingBox b_box_msg;
-    RegisteredPoint com_msg;
 
-    person_id_msg.tracking_id = tracking_id;
-    person_id_msg.recognition_id = -1; // Default value of recognition_id
+    auto b_box = detection_data->Query2DBoundingBox();
+    auto com = detection_data->QueryCenterMass();
 
-    b_box_msg.x = b_box.rect.x;
-    b_box_msg.y = b_box.rect.y;
-    b_box_msg.w = b_box.rect.w;
-    b_box_msg.h = b_box.rect.h;
-    b_box_msg.confidence = b_box.confidence;
+    person_msg.person_id.tracking_id = detection_data->QueryId();
+    person_msg.person_id.recognition_id = -1; // Default value of recognition_id
 
-    com_msg.world.x = com.world.point.x;
-    com_msg.world.y = com.world.point.y;
-    com_msg.world.z = com.world.point.z;
-    com_msg.world_confidence = com.world.confidence;
-    com_msg.image.x = com.image.point.x;
-    com_msg.image.y = com.image.point.y;
-    com_msg.image.z = com.image.point.z;
-    com_msg.image_confidence = com.image.confidence;
+    person_msg.bounding_box.top_left.x = b_box.rect.x;
+    person_msg.bounding_box.top_left.y = b_box.rect.y;
+    person_msg.bounding_box.bottom_right.x = b_box.rect.x + b_box.rect.w;
+    person_msg.bounding_box.bottom_right.y = b_box.rect.y + b_box.rect.h;
 
-    person_msg.person_id = person_id_msg;
-    person_msg.bounding_box = b_box_msg;
-    person_msg.center_of_mass = com_msg;
+    person_msg.center_of_mass.image.x = com.image.point.x;
+    person_msg.center_of_mass.image.y = com.image.point.y;
+    person_msg.center_of_mass.world.x = com.world.point.x; // MW unit already in meters
+    person_msg.center_of_mass.world.y = com.world.point.y; // MW unit already in meters
+    person_msg.center_of_mass.world.z = com.world.point.z; // MW unit already in meters
+
     return person_msg;
+  }
+
+  /*
+   * Prepare Face Message.
+   */
+  Face PersonNodelet::prepareFaceMsg(PersonModule::PersonTrackingData::Person* single_person_data)
+  {
+    Face face_msg;
+
+    if (pt_video_module_->QueryConfiguration()->QueryTracking()->IsPersonOrientationEnabled())
+    {
+      auto person_orientation = single_person_data->QueryTracking()->QueryPersonOrientation();
+      if (person_orientation.confidence > ORIENTATION_CONFIDENCE_THRESHOLD)
+      {
+        face_msg.orientation = ORIENTATION_DESC[person_orientation.orientation];
+      }
+    }
+
+    if (pt_video_module_->QueryConfiguration()->QueryTracking()->IsHeadBoundingBoxEnabled())
+    {
+      auto head_b_box = single_person_data->QueryTracking()->QueryHeadBoundingBox();
+      if (head_b_box.confidence > HEAD_BOX_CONFIDENCE_THRESHOLD)
+      {
+        face_msg.head_bounding_box.top_left.x = head_b_box.rect.x;
+        face_msg.head_bounding_box.top_left.y = head_b_box.rect.y;
+        face_msg.head_bounding_box.bottom_right.x = head_b_box.rect.x + head_b_box.rect.w;
+        face_msg.head_bounding_box.bottom_right.y = head_b_box.rect.y + head_b_box.rect.h;
+      }
+    }
+
+    if (pt_video_module_->QueryConfiguration()->QueryTracking()->IsHeadPoseEnabled())
+    {
+      PersonModule::PersonTrackingData::PoseEulerAngles head_angles;
+      if (single_person_data->QueryTracking()->QueryHeadPose(head_angles))
+      {
+        face_msg.head_pose.x = head_angles.pitch;
+        face_msg.head_pose.y = head_angles.roll;
+        face_msg.head_pose.z = head_angles.yaw;
+      }
+    }
+
+    if (pt_video_module_->QueryConfiguration()->QueryTracking()->IsFaceLandmarksEnabled())
+    {
+      auto landmarks_info = single_person_data->QueryFace()->QueryLandmarks();
+      auto num_of_landmarks = single_person_data->QueryFace()->QueryNumLandmarks();
+      if ((num_of_landmarks > 0) && (landmarks_info->confidence > LANDMARKS_CONFIDENCE_THRESHOLD))
+      {
+        auto landmark = landmarks_info->landmarks;
+        for (int i = 0; i < landmarks_info->numLandmarks; ++i)
+        {
+          RegisteredPoint reg_point;
+          reg_point.image.x = landmark->image.x;
+          reg_point.image.y = landmark->image.y;
+          reg_point.world.x = landmark->world.x/1000; // convert mm to meters
+          reg_point.world.y = landmark->world.y/1000; // convert mm to meters
+          reg_point.world.z = landmark->world.z/1000; // convert mm to meters
+          face_msg.landmarks.push_back(reg_point);
+          landmark = ++landmark;
+        }
+      }
+    }
+
+    return face_msg;
+  }
+
+  /*
+   * Prepare Body Message.
+   */
+  Body PersonNodelet::prepareBodyMsg(PersonModule::PersonTrackingData::Person* single_person_data)
+  {
+    Body body_msg;
+
+    if (pt_video_module_->QueryConfiguration()->QueryGestures()->IsEnabled())
+    {
+      auto person_gestures = single_person_data->QueryGestures();
+      if (person_gestures != nullptr)
+      {
+        // Only Pointing gesture is supported in this version of the MW
+        if ((person_gestures->IsPointing())
+            && (person_gestures->QueryPointingInfo().confidence > GESTURE_CONFIDENCE_THRESHOLD))
+        {
+          body_msg.gesture.type = "Pointing";
+          auto pointing_info = person_gestures->QueryPointingInfo();
+          body_msg.gesture.origin.image.x = pointing_info.colorPointingData.origin.x;
+          body_msg.gesture.origin.image.y = pointing_info.colorPointingData.origin.y;
+          body_msg.gesture.origin.world.x = pointing_info.worldPointingData.origin.x/1000; // convert mm to meters
+          body_msg.gesture.origin.world.y = pointing_info.worldPointingData.origin.y/1000; // convert mm to meters
+          body_msg.gesture.origin.world.z = pointing_info.worldPointingData.origin.z/1000; // convert mm to meters
+          body_msg.gesture.direction.image.x = pointing_info.colorPointingData.direction.x;
+          body_msg.gesture.direction.image.y = pointing_info.colorPointingData.direction.y;
+          body_msg.gesture.direction.world.x = pointing_info.worldPointingData.direction.x/1000; // convert mm to meters
+          body_msg.gesture.direction.world.y = pointing_info.worldPointingData.direction.y/1000; // convert mm to meters
+          body_msg.gesture.direction.world.z = pointing_info.worldPointingData.direction.z/1000; // convert mm to meters
+        }
+      }
+    }
+
+    if (pt_video_module_->QueryConfiguration()->QuerySkeletonJoints()->IsEnabled())
+    {
+      auto person_joints = single_person_data->QuerySkeletonJoints();
+      auto num_of_joints = person_joints->QueryNumJoints();
+      if (num_of_joints > 0)
+      {
+        std::vector<PersonModule::PersonTrackingData::PersonJoints::SkeletonPoint> skeleton_points(num_of_joints);
+        person_joints->QueryJoints(skeleton_points.data());
+        for (const auto& skeleton_point: skeleton_points)
+        {
+          // Based on MW sample program, checking only Image confidence and not World confidence
+          if (skeleton_point.confidenceImage > SKELETON_CONFIDENCE_THRESHOLD)
+          {
+            SkeletonJoint skeleton_joint;
+            skeleton_joint.type = JOINT_TYPE_DESC[skeleton_point.jointType];
+            skeleton_joint.point.image.x = skeleton_point.image.x;
+            skeleton_joint.point.image.y = skeleton_point.image.y;
+            skeleton_joint.point.world.x = skeleton_point.world.x/1000; // convert mm to meters
+            skeleton_joint.point.world.y = skeleton_point.world.y/1000; // convert mm to meters
+            skeleton_joint.point.world.z = skeleton_point.world.z/1000; // convert mm to meters
+            body_msg.skeleton_joints.push_back(skeleton_joint);
+          }
+        }
+      }
+    }
+
+    return body_msg;
+  }
+
+  /*
+   * Draw Person.
+   */
+  void PersonNodelet::drawPerson(Person person_msg, cv_bridge::CvImagePtr& cv_ptr)
+  {
+    cv::Point pt1(person_msg.bounding_box.top_left.x, person_msg.bounding_box.top_left.y);
+    cv::Point pt2(person_msg.bounding_box.bottom_right.x, person_msg.bounding_box.bottom_right.y);
+    cv::Rect rect(pt1, pt2);
+    cv::rectangle(cv_ptr->image, rect, cv::Scalar(0, 255, 0), 3);
+
+    cv::circle(cv_ptr->image, cv::Point(person_msg.center_of_mass.image.x,
+        person_msg.center_of_mass.image.y), 5, cv::Scalar(0, 255, 0), 3);
+
+    std::stringstream id;
+    id << "tid: " << person_msg.person_id.tracking_id;
+    /* TODO: Get the real recognition id from the db once that feature is implemented in the next release.
+    if (person_msg.person_id.recognition_id >= 0)
+    {
+      id << ", rid: " << person_msg.person_id.recognition_id;
+    }
+    */
+
+    cv::putText(cv_ptr->image, id.str(), cv::Point(person_msg.bounding_box.top_left.x,
+        (person_msg.bounding_box.top_left.y - 1.0)), cv::FONT_HERSHEY_PLAIN, 1.5, cv::Scalar(0, 255, 0), 2, 8);
+  }
+
+  /*
+   * Draw Orientation.
+   */
+  void PersonNodelet::drawOrientation(std::string orientation, cv_bridge::CvImagePtr& cv_ptr)
+  {
+    std::stringstream orientation_txt;
+    orientation_txt << std::setprecision(1) << std::fixed << " Orientation: " << orientation;
+    cv::putText(cv_ptr->image, orientation_txt.str(), cv::Point(5, 35),
+        cv::FONT_HERSHEY_PLAIN, 1.5, cv::Scalar(255, 0, 0), 2, 8);
+  }
+
+  /*
+   * Draw HeadBoundingBox.
+   */
+  void PersonNodelet::drawHeadBoundingBox(BoundingBox b_box, cv_bridge::CvImagePtr& cv_ptr)
+  {
+    cv::Point pt1(b_box.top_left.x, b_box.top_left.y);
+    cv::Point pt2(b_box.bottom_right.x, b_box.bottom_right.y);
+    cv::Rect rect(pt1, pt2);
+    cv::rectangle(cv_ptr->image, rect, cv::Scalar(255, 0, 0), 2);
+  }
+
+  /*
+   * Draw HeadPose.
+   */
+  void PersonNodelet::drawHeadPose(geometry_msgs::Point head_pose, cv_bridge::CvImagePtr& cv_ptr)
+  {
+    std::stringstream head_pose_txt;
+    head_pose_txt << std::setprecision(1) << std::fixed << " Head Pose: " <<
+        "(" << head_pose.x << ", " << head_pose.y << ", " << head_pose.z << ")";
+    cv::putText(cv_ptr->image, head_pose_txt.str(), cv::Point(5, 65),
+        cv::FONT_HERSHEY_PLAIN, 1.5, cv::Scalar(255, 0, 0), 2, 8);
+  }
+
+  /*
+   * Draw Landmarks.
+   */
+  void PersonNodelet::drawLandmarks(std::vector<RegisteredPoint> landmarks, cv_bridge::CvImagePtr& cv_ptr)
+  {
+    for (const auto& reg_point: landmarks)
+    {
+      cv::Point point(reg_point.image.x, reg_point.image.y);
+      cv::circle(cv_ptr->image, point, 3, cv::Scalar(0, 255, 0), -1, 8, 0);
+    }
+  }
+
+  /*
+   * Draw Gestures.
+   */
+  void PersonNodelet::drawGestures(Gesture gesture, cv_bridge::CvImagePtr& cv_ptr)
+  {
+    cv::Point origin(gesture.origin.image.x, gesture.origin.image.y);
+    cv::circle(cv_ptr->image, origin, 3, cv::Scalar(0, 0, 255), -1, 8, 0);
+    cv::Point gesture_vector(origin.x + 400 * gesture.direction.image.x,
+        origin.y + 400 * gesture.direction.image.y);
+    cv::arrowedLine(cv_ptr->image, origin, gesture_vector, cv::Scalar(0, 0, 255), 2, 8, 0, 0.15);
+    cv::putText(cv_ptr->image, gesture.type, cv::Point(origin.x, origin.y),
+        cv::FONT_HERSHEY_PLAIN, 1.5, cv::Scalar(0, 0, 255), 2, 8);
+  }
+
+  /*
+   * Draw SkeletonJoints.
+   */
+  void PersonNodelet::drawSkeletonJoints(std::vector<SkeletonJoint> skeleton_joints, cv_bridge::CvImagePtr& cv_ptr)
+  {
+    for (const auto& skeleton_joint: skeleton_joints)
+    {
+      cv::Point point(skeleton_joint.point.image.x, skeleton_joint.point.image.y);
+      cv::circle(cv_ptr->image, point, 5, cv::Scalar(255, 0, 0), -1, 8, 0);
+      cv::putText(cv_ptr->image, skeleton_joint.type, cv::Point(point.x, point.y),
+          cv::FONT_HERSHEY_PLAIN, 1.5, cv::Scalar(0, 0, 255), 2, 8);
+    }
   }
 
   /*
@@ -576,51 +787,10 @@ namespace realsense_person
    */
   void PersonNodelet::prepareDetectionImageMsg(PersonDetection detection_msg, cv_bridge::CvImagePtr& cv_ptr)
   {
-    auto color = cv::Scalar(0, 255, 0); // green
     for (Person person_msg: detection_msg.persons)
     {
-      cv::rectangle(cv_ptr->image, cv::Rect(person_msg.bounding_box.x, person_msg.bounding_box.y,
-          (person_msg.bounding_box.x + person_msg.bounding_box.w),
-          (person_msg.bounding_box.y + person_msg.bounding_box.h)), color, 3);
-      cv::circle(cv_ptr->image, cv::Point(person_msg.center_of_mass.image.x,
-          person_msg.center_of_mass.image.y), 5, color, 3);
-
-      std::stringstream id;
-      id << "tid: " << person_msg.person_id.tracking_id;
-
-      /* TODO: Get the real recognition id from the db once that feature is implemented in the next release.
-      if (person_msg.person_id.recognition_id >= 0)
-      {
-        id << ", rid: " << person_msg.person_id.recognition_id;
-      }
-      */
-
-      cv::putText(cv_ptr->image, id.str(), cv::Point(person_msg.bounding_box.x, person_msg.bounding_box.y),
-          cv::FONT_HERSHEY_PLAIN, 3, color);
+      drawPerson(person_msg, cv_ptr);
     }
-  }
-
-  /*
-   * Prepare PersonFace Message.
-   */
-  PersonFace PersonNodelet::preparePersonFaceMsg(int tracking_id,
-      PersonModule::PersonTrackingData::PersonTracking* detection_data,
-      PersonModule::PersonTrackingData::Person* single_person_data)
-  {
-    PersonFace person_face_msg;
-    //TODO: Implement the logic to populate the person_face_msg in the next release.
-    return person_face_msg;
-  }
-
-  /*
-   * Prepare PersonBody Message.
-   */
-  PersonBody PersonNodelet::preparePersonBodyMsg(int tracking_id,
-      PersonModule::PersonTrackingData::Person* single_person_data)
-  {
-    PersonBody person_body_msg;
-    //TODO: Implement the logic to populate the person_body_msg in the next release.
-    return person_body_msg;
   }
 
   /*
@@ -628,7 +798,13 @@ namespace realsense_person
    */
   void PersonNodelet::prepareTrackingImageMsg(PersonTracking tracking_msg, cv_bridge::CvImagePtr& cv_ptr)
   {
-    //TODO: Implement the logic to populate the tracking image in the next release.
+    drawPerson(tracking_msg.person, cv_ptr);
+    drawOrientation(tracking_msg.face.orientation, cv_ptr);
+    drawHeadPose(tracking_msg.face.head_pose, cv_ptr);
+    drawHeadBoundingBox(tracking_msg.face.head_bounding_box, cv_ptr);
+    drawLandmarks(tracking_msg.face.landmarks, cv_ptr);
+    drawGestures(tracking_msg.body.gesture, cv_ptr);
+    drawSkeletonJoints(tracking_msg.body.skeleton_joints, cv_ptr);
   }
 
   /*
@@ -648,14 +824,14 @@ namespace realsense_person
     {
       res.status = 0;
       res.status_desc = "Success";
-      int detected_person_cnt = person_data->QueryNumberOfPeople();
+      auto detected_person_cnt = person_data->QueryNumberOfPeople();
       res.detected_person_count = detected_person_cnt;
       for (int i = 0; i < detected_person_cnt; ++i)
       {
-        PersonModule::PersonTrackingData::Person* single_person_data =
+        auto single_person_data =
             person_data->QueryPersonData(PersonModule::PersonTrackingData::ACCESS_ORDER_BY_ID, i);
-        PersonModule::PersonTrackingData::PersonTracking* detection_data = single_person_data->QueryTracking();
-        int tracking_id = detection_data->QueryId();
+        auto detection_data = single_person_data->QueryTracking();
+        auto tracking_id = detection_data->QueryId();
         res.tracking_ids.push_back(tracking_id);
       }
     }
@@ -679,7 +855,6 @@ namespace realsense_person
     {
       tracking_id_ = req.tracking_id;
       pt_video_module_->QueryConfiguration()->QueryTracking()->Enable();
-      pt_video_module_->QueryConfiguration()->QueryTracking()->EnableFaceLandmarks();
       person_data->StartTracking(tracking_id_);
       res.status = 0;
       res.status_desc = "Started tracking person with tracking_id " + std::to_string(tracking_id_);
@@ -705,6 +880,7 @@ namespace realsense_person
       person_data->StopTracking(tracking_id_);
       res.status = 0;
       res.status_desc = "Stopped tracking person with tracking_id " + std::to_string(tracking_id_);
+      tracking_id_ = -1;
     }
     return true;
   }
@@ -720,7 +896,7 @@ namespace realsense_person
     res.recognition_id = -1;
     if (!pt_video_module_->QueryConfiguration()->QueryRecognition()->IsEnabled())
     {
-      res.status_desc = "Recognition Not Enabled";
+      res.status_desc = "enable_recognition param not set";
     }
     else
     {
@@ -739,7 +915,7 @@ namespace realsense_person
         }
         else
         {
-          int recognition_id = -1;
+          int32_t recognition_id = -1;
           res.status = person->QueryRecognition()->RegisterUser(&recognition_id);
           res.status_desc = REGISTRATION_DESC[res.status];
           res.recognition_id = recognition_id;
@@ -759,9 +935,8 @@ namespace realsense_person
     if (!pt_video_module_->QueryConfiguration()->QueryRecognition()->IsEnabled())
     {
       res.status = -1;
-      res.status_desc = "Recognition Not Enabled";
+      res.status_desc = "enable_recognition param not set";
       res.recognition_id = -1;
-      res.confidence = -1.0;
     }
     else
     {
@@ -779,7 +954,6 @@ namespace realsense_person
           res.status = -1;
           res.status_desc = "Tracking Id Not Found";
           res.recognition_id = -1;
-          res.confidence = -1.0;
         }
         else
         {
@@ -787,7 +961,6 @@ namespace realsense_person
           res.status = person->QueryRecognition()->RecognizeUser(&result);
           res.status_desc = RECOGNITION_DESC[res.status];
           res.recognition_id = result.recognitionId;
-          res.confidence = result.similarityScore;
         }
       }
     }
@@ -804,7 +977,7 @@ namespace realsense_person
     if (!pt_video_module_->QueryConfiguration()->QueryRecognition()->IsEnabled())
     {
       res.status = -1;
-      res.status_desc = "Recognition Not Enabled";
+      res.status_desc = "enable_recognition param not set";
     }
     else
     {

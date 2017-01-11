@@ -1,4 +1,4 @@
 std_msgs/Header header 
 realsense_person/Person person
-realsense_person/PersonFace person_face
-realsense_person/PersonBody person_body
+realsense_person/Face face
+realsense_person/Body body

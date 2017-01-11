@@ -44,15 +44,17 @@
 #include <sensor_msgs/CameraInfo.h>
 #include <realsense_person/constants.h>
 #include <realsense_person/person_paramsConfig.h>
-#include <realsense_person/RegisteredPoint.h>
-#include <realsense_person/BoundingBox.h>
+#include <realsense_person/PersonDetection.h>
+#include <realsense_person/PersonTracking.h>
 #include <realsense_person/PersonId.h>
 #include <realsense_person/Person.h>
-#include <realsense_person/PersonDetection.h>
-#include <realsense_person/PersonFace.h>
-#include <realsense_person/PersonSkeleton.h>
-#include <realsense_person/PersonBody.h>
-#include <realsense_person/PersonTracking.h>
+#include <realsense_person/Face.h>
+#include <realsense_person/Body.h>
+#include <realsense_person/Gesture.h>
+#include <realsense_person/SkeletonJoint.h>
+#include <realsense_person/RegisteredPoint.h>
+#include <realsense_person/BoundingBox.h>
+#include <realsense_person/Pixel.h>
 #include <realsense_person/GetTrackingId.h>
 #include <realsense_person/Recognize.h>
 #include <realsense_person/Register.h>
@@ -135,16 +137,16 @@ namespace realsense_person
 
     virtual bool getTrackingIdServiceHandler(realsense_person::GetTrackingId::Request &req,
         realsense_person::GetTrackingId::Response &res);
+    virtual bool startTrackingServiceHandler(realsense_person::StartTracking::Request &req,
+        realsense_person::StartTracking::Response &res);
+    virtual bool stopTrackingServiceHandler(realsense_person::StopTracking::Request &req,
+        realsense_person::StopTracking::Response &res);
     virtual bool recognizeServiceHandler(realsense_person::Recognize::Request &req,
         realsense_person::Recognize::Response &res);
     virtual bool registerServiceHandler(realsense_person::Register::Request &req,
         realsense_person::Register::Response &res);
     virtual bool reinforceServiceHandler(realsense_person::Reinforce::Request &req,
         realsense_person::Reinforce::Response &res);
-    virtual bool startTrackingServiceHandler(realsense_person::StartTracking::Request &req,
-        realsense_person::StartTracking::Response &res);
-    virtual bool stopTrackingServiceHandler(realsense_person::StopTracking::Request &req,
-        realsense_person::StopTracking::Response &res);
     virtual bool serializeServiceHandler(realsense_person::Serialize::Request &req,
         realsense_person::Serialize::Response &res);
     virtual bool deserializeServiceHandler(realsense_person::Deserialize::Request &req,
@@ -170,11 +172,16 @@ namespace realsense_person
     PersonModule::PersonTrackingData* getPersonData();
     void prepareMsgs(PersonModule::PersonTrackingData* person_data, const sensor_msgs::ImageConstPtr& color_image,
         double msg_received_time);
-    Person preparePersonMsg(int tracking_id, PersonModule::PersonTrackingData::BoundingBox2D b_box,
-        PersonModule::PersonTrackingData::PointCombined com);
-    PersonFace preparePersonFaceMsg(int tracking_id, PersonModule::PersonTrackingData::PersonTracking* detection_data,
-        PersonModule::PersonTrackingData::Person* single_person_data);
-    PersonBody preparePersonBodyMsg(int tracking_id, PersonModule::PersonTrackingData::Person* single_person_data);
+    Person preparePersonMsg(PersonModule::PersonTrackingData::PersonTracking* detection_data);
+    Face prepareFaceMsg(PersonModule::PersonTrackingData::Person* single_person_data);
+    Body prepareBodyMsg(PersonModule::PersonTrackingData::Person* single_person_data);
+    void drawPerson(Person person_msg, cv_bridge::CvImagePtr& cv_ptr);
+    void drawOrientation(std::string orientation, cv_bridge::CvImagePtr& cv_ptr);
+    void drawHeadPose(geometry_msgs::Point head_pose, cv_bridge::CvImagePtr& cv_ptr);
+    void drawHeadBoundingBox(BoundingBox b_box, cv_bridge::CvImagePtr& cv_ptr);
+    void drawLandmarks(std::vector<RegisteredPoint> landmarks, cv_bridge::CvImagePtr& cv_ptr);
+    void drawGestures(Gesture person_gesture, cv_bridge::CvImagePtr& cv_ptr);
+    void drawSkeletonJoints(std::vector<SkeletonJoint> skeleton_joints, cv_bridge::CvImagePtr& cv_ptr);
     void prepareDetectionImageMsg(PersonDetection detection_msg, cv_bridge::CvImagePtr& cv_ptr);
     void prepareTrackingImageMsg(PersonTracking tracking_msg, cv_bridge::CvImagePtr& cv_ptr);
   };
