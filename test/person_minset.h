@@ -30,17 +30,12 @@
 
 #include <ros/ros.h>
 #include <gtest/gtest.h>
-#include <realsense_person/constants.h>
-#include <realsense_person/PersonDetection.h>
 #include <sensor_msgs/Image.h>
+#include <realsense_person/constants.h>
+#include <realsense_person/person_paramsConfig.h>
 #include <realsense_person/PersonDetection.h>
-#include <realsense_person/PersonTracking.h>
 #include <realsense_person/PersonId.h>
 #include <realsense_person/Person.h>
-#include <realsense_person/Face.h>
-#include <realsense_person/Body.h>
-#include <realsense_person/Gesture.h>
-#include <realsense_person/SkeletonJoint.h>
 #include <realsense_person/RegisteredPoint.h>
 #include <realsense_person/BoundingBox.h>
 #include <realsense_person/Pixel.h>
@@ -48,10 +43,6 @@
 #include <realsense_person/Recognize.h>
 #include <realsense_person/Register.h>
 #include <realsense_person/Reinforce.h>
-#include <realsense_person/Serialize.h>
-#include <realsense_person/Deserialize.h>
-#include <realsense_person/StartTracking.h>
-#include <realsense_person/StopTracking.h>
 
 using namespace realsense_person;
 

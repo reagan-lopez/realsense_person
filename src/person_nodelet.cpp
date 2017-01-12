@@ -121,6 +121,7 @@ namespace realsense_person
       pt_video_module_->QueryConfiguration()->QueryRecognition()->Disable();
     }
 
+/*  TODO: Temporarily removed in MW Beta3 version
     if ((config.enable_orientation) &&
         (!pt_video_module_->QueryConfiguration()->QueryTracking()->IsPersonOrientationEnabled()))
     {
@@ -146,6 +147,7 @@ namespace realsense_person
       ROS_INFO_STREAM(nodelet_name_ << " - Disabling head pose");
       pt_video_module_->QueryConfiguration()->QueryTracking()->DisableHeadPose();
     }
+*/
 
     if ((config.enable_head_bounding_box) &&
         (!pt_video_module_->QueryConfiguration()->QueryTracking()->IsHeadBoundingBoxEnabled()))
@@ -161,16 +163,16 @@ namespace realsense_person
     }
 
     if ((config.enable_face_landmarks) &&
-        (!pt_video_module_->QueryConfiguration()->QueryTracking()->IsFaceLandmarksEnabled()))
+        (!pt_video_module_->QueryConfiguration()->QueryFace()->IsFaceLandmarksEnabled()))
     {
       ROS_INFO_STREAM(nodelet_name_ << " - Enabling face landmarks");
-      pt_video_module_->QueryConfiguration()->QueryTracking()->EnableFaceLandmarks();
+      pt_video_module_->QueryConfiguration()->QueryFace()->EnableFaceLandmarks();
     }
     else if ((!config.enable_face_landmarks) &&
-        (pt_video_module_->QueryConfiguration()->QueryTracking()->IsFaceLandmarksEnabled()))
+        (pt_video_module_->QueryConfiguration()->QueryFace()->IsFaceLandmarksEnabled()))
     {
       ROS_INFO_STREAM(nodelet_name_ << " - Disabling face landmarks");
-      pt_video_module_->QueryConfiguration()->QueryTracking()->DisableFaceLandmarks();
+      pt_video_module_->QueryConfiguration()->QueryFace()->DisableFaceLandmarks();
     }
 
     if ((config.enable_gestures) &&
@@ -412,7 +414,7 @@ namespace realsense_person
         image_format, image->step};
     sample_set[image_type] = RSCore::image_interface::create_instance_from_raw_data(&image_info,
         RSCore::image_interface::image_data_with_data_releaser(image->data.data(), nullptr),
-        RSCore::stream_type::color, RSCore::image_interface::flag::any, 0, 0, nullptr);
+        RSCore::stream_type::color, RSCore::image_interface::flag::any, 0, 0);
   }
 
   /*
@@ -421,7 +423,7 @@ namespace realsense_person
   void PersonNodelet::processFrame(RSCore::correlated_sample_set sample_set)
   {
     std::unique_lock<std::mutex> lock(frame_lock_);
-    auto status = pt_video_module_->process_sample_set_sync(&sample_set);
+    auto status = pt_video_module_->process_sample_set(sample_set);
 
     if (status != RSCore::status::status_no_error)
     {
@@ -454,7 +456,7 @@ namespace realsense_person
       for (int i = 0; i < detected_person_cnt; ++i)
       {
         auto single_person_data =
-            person_data->QueryPersonData(PersonModule::PersonTrackingData::ACCESS_ORDER_BY_ID, i);
+            person_data->QueryPersonData(PersonModule::PersonTrackingData::ACCESS_ORDER_BY_INDEX, i);
         auto detection_data = single_person_data->QueryTracking();
         Person person_msg = preparePersonMsg(detection_data);
 
@@ -565,6 +567,8 @@ namespace realsense_person
   {
     Face face_msg;
 
+/*
+    TODO: Temporarily removed in MW Beta3 version
     if (pt_video_module_->QueryConfiguration()->QueryTracking()->IsPersonOrientationEnabled())
     {
       auto person_orientation = single_person_data->QueryTracking()->QueryPersonOrientation();
@@ -573,7 +577,21 @@ namespace realsense_person
         face_msg.orientation = ORIENTATION_DESC[person_orientation.orientation];
       }
     }
+*/
 
+/*
+    TODO: Temporarily removed in MW Beta3 version
+    if (pt_video_module_->QueryConfiguration()->QueryTracking()->IsHeadPoseEnabled())
+    {
+      PersonModule::PersonTrackingData::PoseEulerAngles head_angles;
+      if (single_person_data->QueryFace()->QueryHeadPose(head_angles))
+      {
+        face_msg.head_pose.x = head_angles.pitch;
+        face_msg.head_pose.y = head_angles.roll;
+        face_msg.head_pose.z = head_angles.yaw;
+      }
+    }
+*/
     if (pt_video_module_->QueryConfiguration()->QueryTracking()->IsHeadBoundingBoxEnabled())
     {
       auto head_b_box = single_person_data->QueryTracking()->QueryHeadBoundingBox();
@@ -586,18 +604,7 @@ namespace realsense_person
       }
     }
 
-    if (pt_video_module_->QueryConfiguration()->QueryTracking()->IsHeadPoseEnabled())
-    {
-      PersonModule::PersonTrackingData::PoseEulerAngles head_angles;
-      if (single_person_data->QueryTracking()->QueryHeadPose(head_angles))
-      {
-        face_msg.head_pose.x = head_angles.pitch;
-        face_msg.head_pose.y = head_angles.roll;
-        face_msg.head_pose.z = head_angles.yaw;
-      }
-    }
-
-    if (pt_video_module_->QueryConfiguration()->QueryTracking()->IsFaceLandmarksEnabled())
+    if (pt_video_module_->QueryConfiguration()->QueryFace()->IsFaceLandmarksEnabled())
     {
       auto landmarks_info = single_person_data->QueryFace()->QueryLandmarks();
       auto num_of_landmarks = single_person_data->QueryFace()->QueryNumLandmarks();
@@ -799,8 +806,10 @@ namespace realsense_person
   void PersonNodelet::prepareTrackingImageMsg(PersonTracking tracking_msg, cv_bridge::CvImagePtr& cv_ptr)
   {
     drawPerson(tracking_msg.person, cv_ptr);
+/*  TODO: Temporarily removed from MW Beta3 version
     drawOrientation(tracking_msg.face.orientation, cv_ptr);
     drawHeadPose(tracking_msg.face.head_pose, cv_ptr);
+*/
     drawHeadBoundingBox(tracking_msg.face.head_bounding_box, cv_ptr);
     drawLandmarks(tracking_msg.face.landmarks, cv_ptr);
     drawGestures(tracking_msg.body.gesture, cv_ptr);
@@ -829,7 +838,7 @@ namespace realsense_person
       for (int i = 0; i < detected_person_cnt; ++i)
       {
         auto single_person_data =
-            person_data->QueryPersonData(PersonModule::PersonTrackingData::ACCESS_ORDER_BY_ID, i);
+            person_data->QueryPersonData(PersonModule::PersonTrackingData::ACCESS_ORDER_BY_INDEX, i);
         auto detection_data = single_person_data->QueryTracking();
         auto tracking_id = detection_data->QueryId();
         res.tracking_ids.push_back(tracking_id);
@@ -915,10 +924,12 @@ namespace realsense_person
         }
         else
         {
-          int32_t recognition_id = -1;
-          res.status = person->QueryRecognition()->RegisterUser(&recognition_id);
+          int32_t o_recognition_id = -1;
+          int32_t o_tracking_id;
+          int32_t o_descriptor_id;
+          res.status = person->QueryRecognition()->RegisterUser(&o_recognition_id, &o_tracking_id, &o_descriptor_id);
           res.status_desc = REGISTRATION_DESC[res.status];
-          res.recognition_id = recognition_id;
+          res.recognition_id = o_recognition_id;
         }
       }
     }
@@ -957,7 +968,7 @@ namespace realsense_person
         }
         else
         {
-          PersonModule::PersonTrackingData::RecognizerData result;
+          PersonModule::PersonTrackingData::PersonRecognition::RecognizerData result;
           res.status = person->QueryRecognition()->RecognizeUser(&result);
           res.status_desc = RECOGNITION_DESC[res.status];
           res.recognition_id = result.recognitionId;
@@ -997,8 +1008,10 @@ namespace realsense_person
         }
         else
         {
-          res.status = person->QueryRecognition()->ReinforceUserRegistration(req.recognition_id,
-              PersonModule::PersonTrackingData::PersonRecognition::RegisterPolicyManualAdd);
+          int32_t o_tracking_id;
+          int32_t o_descriptor_id;
+          res.status = person->QueryRecognition()->ReinforceUserRegistration(req.recognition_id, &o_tracking_id,
+                &o_descriptor_id);
           res.status_desc = REGISTRATION_DESC[res.status];
         }
       }

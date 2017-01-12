@@ -15,15 +15,10 @@ set(CMAKE_EXE_LINKER_FLAGS "-pie -z noexecstack -z relro -z now")
 # Flags shared libraries
 set(CMAKE_SHARED_LINKER_FLAGS "-z noexecstack -z relro -z now")
 
-# TODO: Use PkgConfig for the beta3 release of the PersonTracking library
-# find_package(PkgConfig REQUIRED)
-# pkg_search_module(PERSONTRACKING REQUIRED realsense_persontracking)
+find_package(PkgConfig REQUIRED)
+pkg_search_module(PERSONTRACKING REQUIRED realsense_persontracking)
 
-# TODO: Remove the temporary hardcoded paths in the beta3 release of the PersonTracking library
-set(PERSONTRACKING_LIBRARIES /usr/local/lib/librealsense_persontracking.so)
-set(PERSONTRACKING_INCLUDE_DIRS /usr/include/librealsense/pt /usr/local/include)
-
-# OpenCV used for producing detection image frames.
+# OpenCV used for drawing.
 find_package(OpenCV REQUIRED)
 
 # Find catkin macros and libraries

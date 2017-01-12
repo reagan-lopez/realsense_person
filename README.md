@@ -41,7 +41,7 @@ this project or the open source license(s) involved.
 |:-------------- |:---------------------|
 | OS             | Ubuntu 16.04 LTS     |
 | Kernel         | 4.4.0-45-generic     |
-| librealsense_persontracking | beta2 installation script   |
+| librealsense_persontracking | Beta3   |
 
 ##Building this Package from Source:
 <b>Note:</b> ROS beginners, please ensure that the basic ROS environment and catkin workspace has been set up by following the instructions at http://wiki.ros.org/ROS/Installation.
@@ -143,14 +143,6 @@ Install the package and its dependent packages as follows:
 `enable_recognition` (default: true)
 
    Enables the "recognition" feature in the middleware.
-
-`enable_orientation` (default: true)
-
-   Enables the "orientation" feature in the middleware.
-
-`enable_head_pose` (default: false)
-
-   Enables the "head pose" feature in the middleware.
 
 `enable_head_bounding_box` (default: false)
 
