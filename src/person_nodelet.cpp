@@ -1,5 +1,5 @@
 /******************************************************************************
- Copyright (c) 2016, Intel Corporation
+ Copyright (c) 2017, Intel Corporation
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without
@@ -59,7 +59,7 @@ namespace realsense_person
    */
   PersonNodelet::~PersonNodelet()
   {
-    if (projection_interface_ != nullptr)
+    if (projection_interface_)
     {
       projection_interface_->release();
     }
@@ -180,12 +180,14 @@ namespace realsense_person
     {
       ROS_INFO_STREAM(nodelet_name_ << " - Enabling gestures");
       pt_video_module_->QueryConfiguration()->QueryGestures()->Enable();
+      pt_video_module_->QueryConfiguration()->QueryGestures()->EnableAllGestures();
     }
     else if ((!config.enable_gestures) &&
         (pt_video_module_->QueryConfiguration()->QueryGestures()->IsEnabled()))
     {
       ROS_INFO_STREAM(nodelet_name_ << " - Disabling gestures");
       pt_video_module_->QueryConfiguration()->QueryGestures()->Disable();
+      pt_video_module_->QueryConfiguration()->QueryGestures()->DisableAllGestures();
     }
 
     if ((config.enable_skeleton_joints) &&
@@ -638,7 +640,7 @@ namespace realsense_person
     if (pt_video_module_->QueryConfiguration()->QueryGestures()->IsEnabled())
     {
       auto person_gestures = single_person_data->QueryGestures();
-      if (person_gestures != nullptr)
+      if (person_gestures)
       {
         // Only Pointing gesture is supported in this version of the MW
         if ((person_gestures->IsPointing())
@@ -862,11 +864,40 @@ namespace realsense_person
     }
     else
     {
-      tracking_id_ = req.tracking_id;
-      pt_video_module_->QueryConfiguration()->QueryTracking()->Enable();
-      person_data->StartTracking(tracking_id_);
-      res.status = 0;
-      res.status_desc = "Started tracking person with tracking_id " + std::to_string(tracking_id_);
+      // Currently, the MW API does not indicate if start tracking was successful.
+      // So adding this logic to determine if atleast the input tracking_id is valid
+      bool tracking_id_found = false;
+      auto detected_person_cnt = person_data->QueryNumberOfPeople();
+      for (int i = 0; i < detected_person_cnt; ++i)
+      {
+        auto single_person_data =
+            person_data->QueryPersonData(PersonModule::PersonTrackingData::ACCESS_ORDER_BY_INDEX, i);
+        auto detection_data = single_person_data->QueryTracking();
+        auto tracking_id = detection_data->QueryId();
+        if (tracking_id == req.tracking_id)
+        {
+          tracking_id_found = true;
+          break;
+        }
+      }
+      if (tracking_id_found)
+      {
+        // Currently, the MW does not have an API to check if tracking is enabled.
+        // So using the tracking_id_ variable to determine the same.
+        if (tracking_id_ == -1)
+        {
+          pt_video_module_->QueryConfiguration()->QueryTracking()->Enable();
+        }
+        tracking_id_ = req.tracking_id;
+        person_data->StartTracking(tracking_id_);
+        res.status = 0;
+        res.status_desc = "Started tracking person with tracking_id " + std::to_string(tracking_id_);
+      }
+      else
+      {
+        res.status = -1;
+        res.status_desc = "tracking_id not found";
+      }
     }
     return true;
   }
@@ -886,10 +917,20 @@ namespace realsense_person
     }
     else
     {
-      person_data->StopTracking(tracking_id_);
-      res.status = 0;
-      res.status_desc = "Stopped tracking person with tracking_id " + std::to_string(tracking_id_);
-      tracking_id_ = -1;
+      // Currently, the MW does not have an API to check if tracking is disabled.
+      // So using the tracking_id_ variable to determine the same.
+      if (tracking_id_ == -1)
+      {
+        res.status = 0;
+        res.status_desc = "Already not tracking";
+      }
+      else
+      {
+        person_data->StopTracking(tracking_id_);
+        res.status = 0;
+        res.status_desc = "Stopped tracking person with tracking_id " + std::to_string(tracking_id_);
+        tracking_id_ = -1;
+      }
     }
     return true;
   }
@@ -920,7 +961,7 @@ namespace realsense_person
         auto person = person_data->QueryPersonDataById(req.tracking_id);
         if (!person)
         {
-          res.status_desc = "Tracking Id Not Found";
+          res.status_desc = "tracking_id not found";
         }
         else
         {
@@ -963,7 +1004,7 @@ namespace realsense_person
         if (!person)
         {
           res.status = -1;
-          res.status_desc = "Tracking Id Not Found";
+          res.status_desc = "tracking_id not found";
           res.recognition_id = -1;
         }
         else
@@ -1004,7 +1045,7 @@ namespace realsense_person
         if (!person)
         {
           res.status = -1;
-          res.status_desc = "Tracking Id Not Found";
+          res.status_desc = "tracking_id not found";
         }
         else
         {
