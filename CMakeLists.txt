@@ -57,7 +57,7 @@ add_message_files(
 
 add_service_files(
   FILES
-  GetTrackingId.srv
+  GetTrackingState.srv
   Register.srv
   Recognize.srv
   Reinforce.srv
@@ -110,8 +110,8 @@ add_dependencies(${PROJECT_NAME}_nodelet
 ################
 ## Unit Tests ##
 ################
-add_executable(test_person_minset test/person_minset.cpp)
-target_link_libraries(test_person_minset
+add_executable(test_person_detection test/person_detection.cpp)
+target_link_libraries(test_person_detection
   ${catkin_LIBRARIES}
   ${GTEST_LIBRARIES}
 )

@@ -27,7 +27,7 @@
  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *******************************************************************************/
-#include "person_minset.h"
+#include "person_detection.h"
 
 using namespace std;
 using namespace realsense_person;
@@ -85,21 +85,15 @@ TEST(RealsensePerson, DetectionImageTopic)
   EXPECT_TRUE(g_detection_image_recv);
 }
 
-TEST(RealsensePerson, GetTrackingIDService)
-{
-  realsense_person::GetTrackingId service;
-  g_get_tracking_id_client.call(service);
-  uint32_t expected_count = service.response.detected_person_count;
-  uint32_t actual_count = service.response.tracking_ids.size();
-  g_tracking_ids = service.response.tracking_ids;
-  EXPECT_EQ(expected_count, actual_count);
-}
-
 TEST(RealsensePerson, RegisterService)
 {
+  realsense_person::GetTrackingState get_tracking_state_service;
+  g_get_tracking_state_client.call(get_tracking_state_service);
+  g_tracking_ids = get_tracking_state_service.response.detected_tracking_ids;
+
   bool registered_all = true;
 
-  for (uint32_t tid: g_tracking_ids)
+  for (auto tid: g_tracking_ids)
   {
     bool registered_one = false;
     realsense_person::Register service;
@@ -223,7 +217,7 @@ int main(int argc, char **argv) try
   ros::NodeHandle nh;
   ros::Subscriber detection_sub = nh.subscribe(ns_prefix + DETECTION_TOPIC, 1, detectionCallback);
   ros::Subscriber detection_image_sub = nh.subscribe(ns_prefix + DETECTION_IMAGE_TOPIC, 1, detectionImageCallback);
-  g_get_tracking_id_client = nh.serviceClient<realsense_person::GetTrackingId>(ns_prefix + GET_TRACKING_ID_SERVICE);
+  g_get_tracking_state_client = nh.serviceClient<realsense_person::GetTrackingState>(ns_prefix + GET_TRACKING_STATE_SERVICE);
   g_register_client = nh.serviceClient<realsense_person::Register>(ns_prefix + REGISTER_SERVICE);
   g_recognize_client = nh.serviceClient<realsense_person::Recognize>(ns_prefix + RECOGNIZE_SERVICE);
   g_reinforce_client = nh.serviceClient<realsense_person::Reinforce>(ns_prefix + REINFORCE_SERVICE);

@@ -101,9 +101,10 @@ Install the package and its dependent packages as follows:
    Refer to the "tracking_data" topic for more details.
 
 ###Services
-`get_tracking_ids` ([realsense_person/GetTrackingId](srv/GetTrackingId.srv))
+`get_tracking_state` ([realsense_person/GetTrackingState](srv/GetTrackingState.srv))
 
-   Returns a list of tracking_ids of all the people detected in the latest frame.
+   Returns the tracking state which includes the tracking_id of the person currently being tracked
+   along with a list of tracking_ids of all the people detected in the latest frame.
 
 `register_person` ([realsense_person/Register](srv/Register.srv))
 
@@ -125,6 +126,9 @@ Install the package and its dependent packages as follows:
 `stop_tracking` ([realsense_person/StopTracking](srv/StopTracking.srv))
 
    Stops tracking and disables the tracking feature in the middleware.
+
+###Custom Messages
+Refer to the defintion at ([Custom Messages](msg/)).
 
 ###Static Parameters
 `subscribe_rate` (default: 30)
@@ -155,6 +159,8 @@ Install the package and its dependent packages as follows:
 `enable_gestures` (default: false)
 
    Enables the "gesture" feature in the middleware.
+
+   <b>Note:</b> The "gesture" feature is currently in development phase and not fully stable.
 
 `enable_skeleton_joints` (default: false)
 
