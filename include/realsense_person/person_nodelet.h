@@ -1,5 +1,5 @@
 /******************************************************************************
- Copyright (c) 2016, Intel Corporation
+ Copyright (c) 2017, Intel Corporation
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without
@@ -55,7 +55,7 @@
 #include <realsense_person/RegisteredPoint.h>
 #include <realsense_person/BoundingBox.h>
 #include <realsense_person/Pixel.h>
-#include <realsense_person/GetTrackingId.h>
+#include <realsense_person/GetTrackingState.h>
 #include <realsense_person/Recognize.h>
 #include <realsense_person/Register.h>
 #include <realsense_person/Reinforce.h>
@@ -118,7 +118,7 @@ namespace realsense_person
     RSCore::projection_interface* projection_interface_;
     std::unique_ptr<PersonModuleInterface::person_tracking_video_module_interface> pt_video_module_;
 
-    ros::ServiceServer tracking_id_server_;
+    ros::ServiceServer get_tracking_state_server_;
     ros::ServiceServer register_server_;
     ros::ServiceServer recognize_server_;
     ros::ServiceServer reinforce_server_;
@@ -135,8 +135,8 @@ namespace realsense_person
     boost::shared_ptr<dynamic_reconfigure::Server<realsense_person::person_paramsConfig>> dynamic_reconf_server_;
     std::mutex frame_lock_;
 
-    virtual bool getTrackingIdServiceHandler(realsense_person::GetTrackingId::Request &req,
-        realsense_person::GetTrackingId::Response &res);
+    virtual bool getTrackingStateServiceHandler(realsense_person::GetTrackingState::Request &req,
+        realsense_person::GetTrackingState::Response &res);
     virtual bool startTrackingServiceHandler(realsense_person::StartTracking::Request &req,
         realsense_person::StartTracking::Response &res);
     virtual bool stopTrackingServiceHandler(realsense_person::StopTracking::Request &req,

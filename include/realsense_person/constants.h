@@ -1,5 +1,5 @@
 /******************************************************************************
- Copyright (c) 2016, Intel Corporation
+ Copyright (c) 2017, Intel Corporation
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without
@@ -58,7 +58,7 @@ namespace realsense_person
   const std::string TRACKING_IMAGE_TOPIC = "tracking_image";
   const std::string TRACKING_IMAGE_FRAME_ID = "tracking_image";
 
-  const std::string GET_TRACKING_ID_SERVICE = "get_tracking_ids";
+  const std::string GET_TRACKING_STATE_SERVICE = "get_tracking_state";
   const std::string REGISTER_SERVICE = "register_person";
   const std::string RECOGNIZE_SERVICE = "recognize_person";
   const std::string REINFORCE_SERVICE = "reinforce_person";

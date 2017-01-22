@@ -15,7 +15,7 @@
   </include>
 
   <!-- Start test -->
-  <test pkg="realsense_person" type="test_person_minset" test-name="test_person_minset">
+  <test pkg="realsense_person" type="test_person_detection" test-name="test_person_detection">
     <param name="camera"              type="str"  value="$(arg camera)" />
     <param name="person"              type="str"  value="$(arg person)" />
     <param name="ros_sleep_time"      type="int"  value="$(arg ros_sleep_time)" />

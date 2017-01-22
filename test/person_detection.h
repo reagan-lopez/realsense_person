@@ -1,5 +1,5 @@
 /******************************************************************************
- Copyright (c) 2016, Intel Corporation
+ Copyright (c) 2017, Intel Corporation
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without
@@ -39,7 +39,7 @@
 #include <realsense_person/RegisteredPoint.h>
 #include <realsense_person/BoundingBox.h>
 #include <realsense_person/Pixel.h>
-#include <realsense_person/GetTrackingId.h>
+#include <realsense_person/GetTrackingState.h>
 #include <realsense_person/Recognize.h>
 #include <realsense_person/Register.h>
 #include <realsense_person/Reinforce.h>
@@ -62,10 +62,10 @@ bool g_detection_image_recv = false;
 bool g_detection_bbox_recv = false;
 bool g_detection_com_recv = false;
 
-std::vector<uint32_t> g_tracking_ids;
+std::vector<int32_t> g_tracking_ids;
 std::vector<realsense_person::PersonId> g_person_ids;
 
-ros::ServiceClient g_get_tracking_id_client;
+ros::ServiceClient g_get_tracking_state_client;
 ros::ServiceClient g_register_client;
 ros::ServiceClient g_recognize_client;
 ros::ServiceClient g_reinforce_client;

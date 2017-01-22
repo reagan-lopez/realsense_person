@@ -1,0 +1,12 @@
+#######################################################################################################################
+# state -1: indicates failure.
+# state  0: indicates that currently nobody is being tracked; ignore the "current_tracking_id".
+# state  1: indicates that currently a person is being tracked.
+#######################################################################################################################
+
+---
+int32 state
+string state_desc
+int32 current_tracking_id      #tracking_id of the person being currently tracked
+int32[] detected_tracking_ids  #list of tracking_ids of detected people
+

@@ -46,7 +46,7 @@ this project or the open source license(s) involved.
 ##Building this Package from Source:
 <b>Note:</b> ROS beginners, please ensure that the basic ROS environment and catkin workspace has been set up by following the instructions at http://wiki.ros.org/ROS/Installation.
 
-<b>Prerequisite:</b> Successful build and use of this ROS package assumes you have already installed the Beta2 Person-Tracking Middleware.
+<b>Prerequisite:</b> Successful build and use of this ROS package assumes you have already installed the Person-Tracking Middleware.
 
 Install the package and its dependent packages as follows:
  - Clone the repo in the `src` directory of your catkin workspace.
@@ -89,7 +89,7 @@ Install the package and its dependent packages as follows:
    this topic will not have any data.
 
    The information contained in this topic can be controlled using the parameters
-   "enable_orientation", "enable_head_pose", "enable_head_bounding_box", "enable_face_landmarks", "enable_gestures"
+   "enable_head_bounding_box", "enable_face_landmarks", "enable_gestures"
    and "enable_skeleton_joints". Due to performace implications, only some of these parameters are enabled by default.
 
    <b>Note:</b> Enable these parameters on a "need-to" basis as they are compute intensive and may lead to unstable data.
@@ -101,9 +101,10 @@ Install the package and its dependent packages as follows:
    Refer to the "tracking_data" topic for more details.
 
 ###Services
-`get_tracking_ids` ([realsense_person/GetTrackingId](srv/GetTrackingId.srv))
+`get_tracking_state` ([realsense_person/GetTrackingState](srv/GetTrackingState.srv))
 
-   Returns a list of tracking_ids of all the people detected in the latest frame.
+   Returns the tracking state which includes the tracking_id of the person currently being tracked
+   along with a list of tracking_ids of all the people detected in the latest frame.
 
 `register_person` ([realsense_person/Register](srv/Register.srv))
 
@@ -125,6 +126,9 @@ Install the package and its dependent packages as follows:
 `stop_tracking` ([realsense_person/StopTracking](srv/StopTracking.srv))
 
    Stops tracking and disables the tracking feature in the middleware.
+
+###Custom Messages
+Refer to the defintion at ([Custom Messages](msg/)).
 
 ###Static Parameters
 `subscribe_rate` (default: 30)
@@ -156,9 +160,19 @@ Install the package and its dependent packages as follows:
 
    Enables the "gesture" feature in the middleware.
 
+   <b>Note:</b> The "gesture" feature is currently in development phase and not fully stable.
+
 `enable_skeleton_joints` (default: false)
 
    Enables the "skeleton joints" feature in the middleware.
+
+###Coordinates and Units
+The "image" points are pixel points where origin (0,0) is the top-left corner of the image
+with positive x-axis pointing to right and positive y-axis pointing down.
+
+The "world" points are points in meters where the origin (0,0) is the center of the color camera
+with positive x-axis pointing to right, positive y-axis pointing down and positive z-axis pointing forward,
+with respsect to the camera's view.
 
 ###Unit Tests
 Refer to [Unit Tests](test/) for the `.test` files.
