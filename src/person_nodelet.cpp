@@ -44,12 +44,14 @@ namespace realsense_person
         create_person_tracking_video_module(PERSON_MODULE_DATA_PATH));
     projection_interface_ = nullptr;
     caminfo_disconnected_ = false;
-    tracking_id_ = -1;
     current_time_ = 0.0;
     last_detection_time_ = 0.0;
     last_tracking_time_ = 0.0;
     publish_detection_ = false;
     publish_detection_image_ = false;
+
+    enable_tracking_ = false;
+    tracking_id_ = -1;
     publish_tracking_ = false;
     publish_tracking_image_ = false;
   }
@@ -121,88 +123,113 @@ namespace realsense_person
       pt_video_module_->QueryConfiguration()->QueryRecognition()->Disable();
     }
 
-/*  TODO: Temporarily removed in MW Beta3 version
-    if ((config.enable_orientation) &&
-        (!pt_video_module_->QueryConfiguration()->QueryTracking()->IsPersonOrientationEnabled()))
+    if ((config.enable_tracking) && (!enable_tracking_))
     {
-      ROS_INFO_STREAM(nodelet_name_ << " - Enabling orientation");
-      pt_video_module_->QueryConfiguration()->QueryTracking()->EnablePersonOrientation();
+      ROS_INFO_STREAM(nodelet_name_ << " - Enabling tracking");
+      pt_video_module_->QueryConfiguration()->QueryTracking()->Enable();
+      enable_tracking_ = true;
     }
-    else if ((!config.enable_orientation) &&
-        (pt_video_module_->QueryConfiguration()->QueryTracking()->IsPersonOrientationEnabled()))
+    else if ((!config.enable_tracking) && (enable_tracking_))
     {
-      ROS_INFO_STREAM(nodelet_name_ << " - Disabling orientation");
-      pt_video_module_->QueryConfiguration()->QueryTracking()->DisablePersonOrientation();
-    }
-
-    if ((config.enable_head_pose) &&
-        (!pt_video_module_->QueryConfiguration()->QueryTracking()->IsHeadPoseEnabled()))
-    {
-      ROS_INFO_STREAM(nodelet_name_ << " - Enabling head pose");
-      pt_video_module_->QueryConfiguration()->QueryTracking()->EnableHeadPose();
-    }
-    else if ((!config.enable_head_pose) &&
-        (pt_video_module_->QueryConfiguration()->QueryTracking()->IsHeadPoseEnabled()))
-    {
-      ROS_INFO_STREAM(nodelet_name_ << " - Disabling head pose");
-      pt_video_module_->QueryConfiguration()->QueryTracking()->DisableHeadPose();
-    }
-*/
-
-    if ((config.enable_head_bounding_box) &&
-        (!pt_video_module_->QueryConfiguration()->QueryTracking()->IsHeadBoundingBoxEnabled()))
-    {
-      ROS_INFO_STREAM(nodelet_name_ << " - Enabling head bounding box");
-      pt_video_module_->QueryConfiguration()->QueryTracking()->EnableHeadBoundingBox();
-    }
-    else if ((!config.enable_head_bounding_box) &&
-        (pt_video_module_->QueryConfiguration()->QueryTracking()->IsHeadBoundingBoxEnabled()))
-    {
-      ROS_INFO_STREAM(nodelet_name_ << " - Disabling head bounding box");
-      pt_video_module_->QueryConfiguration()->QueryTracking()->DisableHeadBoundingBox();
+      if (tracking_id_ != -1)
+      {
+        ROS_INFO_STREAM(nodelet_name_ << " - Stopping tracking");
+        auto person_data = getPersonData();
+        if (person_data)
+        {
+          person_data->StopTracking(tracking_id_);
+          tracking_id_ = -1;
+        }
+      }
+      ROS_INFO_STREAM(nodelet_name_ << " - Disabling tracking");
+      pt_video_module_->QueryConfiguration()->QueryTracking()->Disable();
+      enable_tracking_ = false;
     }
 
-    if ((config.enable_face_landmarks) &&
-        (!pt_video_module_->QueryConfiguration()->QueryFace()->IsFaceLandmarksEnabled()))
+    if (enable_tracking_)
     {
-      ROS_INFO_STREAM(nodelet_name_ << " - Enabling face landmarks");
-      pt_video_module_->QueryConfiguration()->QueryFace()->EnableFaceLandmarks();
-    }
-    else if ((!config.enable_face_landmarks) &&
-        (pt_video_module_->QueryConfiguration()->QueryFace()->IsFaceLandmarksEnabled()))
-    {
-      ROS_INFO_STREAM(nodelet_name_ << " - Disabling face landmarks");
-      pt_video_module_->QueryConfiguration()->QueryFace()->DisableFaceLandmarks();
-    }
+      /*TODO: Temporarily removed in MW Beta3 version
+        if ((config.enable_orientation) &&
+            (!pt_video_module_->QueryConfiguration()->QueryTracking()->IsPersonOrientationEnabled()))
+        {
+          ROS_INFO_STREAM(nodelet_name_ << " - Enabling orientation");
+          pt_video_module_->QueryConfiguration()->QueryTracking()->EnablePersonOrientation();
+        }
+        else if ((!config.enable_orientation) &&
+            (pt_video_module_->QueryConfiguration()->QueryTracking()->IsPersonOrientationEnabled()))
+        {
+          ROS_INFO_STREAM(nodelet_name_ << " - Disabling orientation");
+          pt_video_module_->QueryConfiguration()->QueryTracking()->DisablePersonOrientation();
+        }
 
-    if ((config.enable_gestures) &&
-        (!pt_video_module_->QueryConfiguration()->QueryGestures()->IsEnabled()))
-    {
-      ROS_INFO_STREAM(nodelet_name_ << " - Enabling gestures");
-      pt_video_module_->QueryConfiguration()->QueryGestures()->Enable();
-      pt_video_module_->QueryConfiguration()->QueryGestures()->EnableAllGestures();
-    }
-    else if ((!config.enable_gestures) &&
-        (pt_video_module_->QueryConfiguration()->QueryGestures()->IsEnabled()))
-    {
-      ROS_INFO_STREAM(nodelet_name_ << " - Disabling gestures");
-      pt_video_module_->QueryConfiguration()->QueryGestures()->Disable();
-      pt_video_module_->QueryConfiguration()->QueryGestures()->DisableAllGestures();
-    }
+        if ((config.enable_head_pose) &&
+            (!pt_video_module_->QueryConfiguration()->QueryTracking()->IsHeadPoseEnabled()))
+        {
+          ROS_INFO_STREAM(nodelet_name_ << " - Enabling head pose");
+          pt_video_module_->QueryConfiguration()->QueryTracking()->EnableHeadPose();
+        }
+        else if ((!config.enable_head_pose) &&
+            (pt_video_module_->QueryConfiguration()->QueryTracking()->IsHeadPoseEnabled()))
+        {
+          ROS_INFO_STREAM(nodelet_name_ << " - Disabling head pose");
+          pt_video_module_->QueryConfiguration()->QueryTracking()->DisableHeadPose();
+        }
+      */
 
-    if ((config.enable_skeleton_joints) &&
-        (!pt_video_module_->QueryConfiguration()->QuerySkeletonJoints()->IsEnabled()))
-    {
-      ROS_INFO_STREAM(nodelet_name_ << " - Enabling skeleton joints");
-      pt_video_module_->QueryConfiguration()->QuerySkeletonJoints()->Enable();
-    }
-    else if ((!config.enable_skeleton_joints) &&
-        (pt_video_module_->QueryConfiguration()->QuerySkeletonJoints()->IsEnabled()))
-    {
-      ROS_INFO_STREAM(nodelet_name_ << " - Disabling skeleton joints");
-      pt_video_module_->QueryConfiguration()->QuerySkeletonJoints()->Disable();
-    }
+      if ((config.enable_head_bounding_box) &&
+          (!pt_video_module_->QueryConfiguration()->QueryTracking()->IsHeadBoundingBoxEnabled()))
+      {
+        ROS_INFO_STREAM(nodelet_name_ << " - Enabling head bounding box");
+        pt_video_module_->QueryConfiguration()->QueryTracking()->EnableHeadBoundingBox();
+      }
+      else if ((!config.enable_head_bounding_box) &&
+          (pt_video_module_->QueryConfiguration()->QueryTracking()->IsHeadBoundingBoxEnabled()))
+      {
+        ROS_INFO_STREAM(nodelet_name_ << " - Disabling head bounding box");
+        pt_video_module_->QueryConfiguration()->QueryTracking()->DisableHeadBoundingBox();
+      }
 
+      if ((config.enable_face_landmarks) &&
+          (!pt_video_module_->QueryConfiguration()->QueryFace()->IsFaceLandmarksEnabled()))
+      {
+        ROS_INFO_STREAM(nodelet_name_ << " - Enabling face landmarks");
+        pt_video_module_->QueryConfiguration()->QueryFace()->EnableFaceLandmarks();
+      }
+      else if ((!config.enable_face_landmarks) &&
+          (pt_video_module_->QueryConfiguration()->QueryFace()->IsFaceLandmarksEnabled()))
+      {
+        ROS_INFO_STREAM(nodelet_name_ << " - Disabling face landmarks");
+        pt_video_module_->QueryConfiguration()->QueryFace()->DisableFaceLandmarks();
+      }
+
+      if ((config.enable_gestures) &&
+          (!pt_video_module_->QueryConfiguration()->QueryGestures()->IsEnabled()))
+      {
+        ROS_INFO_STREAM(nodelet_name_ << " - Enabling gestures");
+        pt_video_module_->QueryConfiguration()->QueryGestures()->Enable();
+        pt_video_module_->QueryConfiguration()->QueryGestures()->EnableAllGestures();
+      }
+      else if ((!config.enable_gestures) &&
+          (pt_video_module_->QueryConfiguration()->QueryGestures()->IsEnabled()))
+      {
+        ROS_INFO_STREAM(nodelet_name_ << " - Disabling gestures");
+        pt_video_module_->QueryConfiguration()->QueryGestures()->Disable();
+        pt_video_module_->QueryConfiguration()->QueryGestures()->DisableAllGestures();
+      }
+
+      if ((config.enable_skeleton_joints) &&
+          (!pt_video_module_->QueryConfiguration()->QuerySkeletonJoints()->IsEnabled()))
+      {
+        ROS_INFO_STREAM(nodelet_name_ << " - Enabling skeleton joints");
+        pt_video_module_->QueryConfiguration()->QuerySkeletonJoints()->Enable();
+      }
+      else if ((!config.enable_skeleton_joints) &&
+          (pt_video_module_->QueryConfiguration()->QuerySkeletonJoints()->IsEnabled()))
+      {
+        ROS_INFO_STREAM(nodelet_name_ << " - Disabling skeleton joints");
+        pt_video_module_->QueryConfiguration()->QuerySkeletonJoints()->Disable();
+      }
+    }
   }
 
   /*
@@ -380,10 +407,10 @@ namespace realsense_person
         (current_detection_rate <= detection_rate_));
     publish_detection_image_ = ((detection_image_pub_.getNumSubscribers() > 0) &&
         (current_detection_rate <= detection_rate_));
-    publish_tracking_ = ((tracking_pub_.getNumSubscribers() > 0) &&
-        (current_tracking_rate <= tracking_rate_));
-    publish_tracking_image_ = ((tracking_image_pub_.getNumSubscribers() > 0) &&
-        (current_tracking_rate <= tracking_rate_));
+    publish_tracking_ = ((enable_tracking_) && (tracking_id_ != -1) &&
+        (tracking_pub_.getNumSubscribers() > 0) && (current_tracking_rate <= tracking_rate_));
+    publish_tracking_image_ = ((enable_tracking_) && (tracking_id_ != -1) &&
+        (tracking_image_pub_.getNumSubscribers() > 0) && (current_tracking_rate <= tracking_rate_));
 
     if (publish_detection_ || publish_detection_image_ || publish_tracking_ || publish_tracking_image_)
     {
@@ -474,7 +501,6 @@ namespace realsense_person
           tracking_msg.person = person_msg;
           tracking_msg.face = prepareFaceMsg(single_person_data);
           tracking_msg.body = prepareBodyMsg(single_person_data);
-
         }
       }
     }
@@ -871,47 +897,49 @@ namespace realsense_person
       realsense_person::StartTracking::Response &res)
   {
     ROS_INFO_STREAM(nodelet_name_ << " - Calling service: " << START_TRACKING_SERVICE);
-    auto person_data = getPersonData();
-    if (!person_data)
+    if (!enable_tracking_)
     {
       res.status = -1;
-      res.status_desc = "Could not get person_data";
+      res.status_desc = "enable_tracking param not set";
     }
     else
     {
-      // Currently, the MW API does not indicate if start tracking was successful.
-      // So adding this logic to determine if atleast the input tracking_id is valid
-      bool tracking_id_found = false;
-      auto detected_count = person_data->QueryNumberOfPeople();
-      for (int i = 0; i < detected_count; ++i)
+      auto person_data = getPersonData();
+      if (!person_data)
       {
-        auto single_person_data =
-            person_data->QueryPersonData(PersonModule::PersonTrackingData::ACCESS_ORDER_BY_INDEX, i);
-        auto detection_data = single_person_data->QueryTracking();
-        auto tracking_id = detection_data->QueryId();
-        if (tracking_id == req.tracking_id)
-        {
-          tracking_id_found = true;
-          break;
-        }
-      }
-      if (!tracking_id_found)
-      {
-        res.status = 1;
-        res.status_desc = "tracking_id not found";
+        res.status = -2;
+        res.status_desc = "Could not get person_data";
       }
       else
       {
-        // Currently, the MW does not have an API to check if tracking is enabled.
-        // So using the tracking_id_ variable to determine the same.
-        if (tracking_id_ == -1)
+        // Currently, the MW API does not indicate if start tracking was successful.
+        // So adding this logic to determine if atleast the input tracking_id is valid
+        bool tracking_id_found = false;
+        auto detected_count = person_data->QueryNumberOfPeople();
+        for (int i = 0; i < detected_count; ++i)
         {
-          pt_video_module_->QueryConfiguration()->QueryTracking()->Enable();
+          auto single_person_data =
+              person_data->QueryPersonData(PersonModule::PersonTrackingData::ACCESS_ORDER_BY_INDEX, i);
+          auto detection_data = single_person_data->QueryTracking();
+          auto tracking_id = detection_data->QueryId();
+          if (tracking_id == req.tracking_id)
+          {
+            tracking_id_found = true;
+            break;
+          }
         }
-        tracking_id_ = req.tracking_id;
-        person_data->StartTracking(tracking_id_);
-        res.status = 0;
-        res.status_desc = "Started tracking person with tracking_id " + std::to_string(tracking_id_);
+        if (!tracking_id_found)
+        {
+          res.status = -3;
+          res.status_desc = "tracking_id not found";
+        }
+        else
+        {
+          tracking_id_ = req.tracking_id;
+          person_data->StartTracking(tracking_id_);
+          res.status = 0;
+          res.status_desc = "Started tracking person with tracking_id " + std::to_string(tracking_id_);
+        }
       }
     }
     return true;
@@ -957,10 +985,10 @@ namespace realsense_person
       realsense_person::Register::Response &res)
   {
     ROS_INFO_STREAM(nodelet_name_ << " - Calling service: " << REGISTER_SERVICE);
-    res.status = -1;
     res.recognition_id = -1;
     if (!pt_video_module_->QueryConfiguration()->QueryRecognition()->IsEnabled())
     {
+      res.status = -1;
       res.status_desc = "enable_recognition param not set";
     }
     else
@@ -968,7 +996,7 @@ namespace realsense_person
       auto person_data = getPersonData();
       if (!person_data)
       {
-        res.status = -1;
+        res.status = -2;
         res.status_desc = "Could not get person data";
       }
       else
@@ -976,6 +1004,7 @@ namespace realsense_person
         auto person = person_data->QueryPersonDataById(req.tracking_id);
         if (!person)
         {
+          res.status = -3;
           res.status_desc = "tracking_id not found";
         }
         else
@@ -1010,7 +1039,7 @@ namespace realsense_person
       auto person_data = getPersonData();
       if (!person_data)
       {
-        res.status = -1;
+        res.status = -2;
         res.status_desc = "Could not get person data";
       }
       else
@@ -1018,7 +1047,7 @@ namespace realsense_person
         auto person = person_data->QueryPersonDataById(req.tracking_id);
         if (!person)
         {
-          res.status = -1;
+          res.status = -3;
           res.status_desc = "tracking_id not found";
           res.recognition_id = -1;
         }
@@ -1051,7 +1080,7 @@ namespace realsense_person
       auto person_data = getPersonData();
       if (!person_data)
       {
-        res.status = -1;
+        res.status = -2;
         res.status_desc = "Could not get person data";
       }
       else
@@ -1059,7 +1088,7 @@ namespace realsense_person
         auto person = person_data->QueryPersonDataById(req.tracking_id);
         if (!person)
         {
-          res.status = -1;
+          res.status = -3;
           res.status_desc = "tracking_id not found";
         }
         else

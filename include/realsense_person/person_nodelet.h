@@ -101,8 +101,11 @@ namespace realsense_person
     double last_tracking_time_;
     bool publish_detection_;
     bool publish_detection_image_;
+
+    bool enable_tracking_;
     bool publish_tracking_;
     bool publish_tracking_image_;
+    ros::ServiceClient service_client;
 
     std::unique_ptr<message_filters::Subscriber<sensor_msgs::CameraInfo>> color_caminfo_sub_;
     std::unique_ptr<message_filters::Subscriber<sensor_msgs::CameraInfo>> depth_caminfo_sub_;
