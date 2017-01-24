@@ -380,9 +380,9 @@ namespace realsense_person
         (current_detection_rate <= detection_rate_));
     publish_detection_image_ = ((detection_image_pub_.getNumSubscribers() > 0) &&
         (current_detection_rate <= detection_rate_));
-    publish_tracking_ = ((tracking_pub_.getNumSubscribers() > 0) &&
+    publish_tracking_ = ((tracking_id_ != -1) && (tracking_pub_.getNumSubscribers() > 0) &&
         (current_tracking_rate <= tracking_rate_));
-    publish_tracking_image_ = ((tracking_image_pub_.getNumSubscribers() > 0) &&
+    publish_tracking_image_ = ((tracking_id_ != -1) && (tracking_image_pub_.getNumSubscribers() > 0) &&
         (current_tracking_rate <= tracking_rate_));
 
     if (publish_detection_ || publish_detection_image_ || publish_tracking_ || publish_tracking_image_)
@@ -829,7 +829,6 @@ namespace realsense_person
     {
       res.state = -1;
       res.state_desc = "Could not get person data";
-      res.current_tracking_id = -1;
     }
     else
     {
@@ -841,7 +840,7 @@ namespace realsense_person
             person_data->QueryPersonData(PersonModule::PersonTrackingData::ACCESS_ORDER_BY_INDEX, i);
         auto detection_data = single_person_data->QueryTracking();
         auto tracking_id = detection_data->QueryId();
-        res.detected_tracking_ids.push_back(tracking_id);
+        res.tracking_ids.push_back(tracking_id);
         if (tracking_id == tracking_id_)
         {
           tracking_id_found = true;
@@ -850,15 +849,24 @@ namespace realsense_person
       if (tracking_id_found)
       {
         res.state = 1;
-        res.state_desc = "Currently tracking person with tracking_id " + std::to_string(tracking_id_);
-        res.current_tracking_id = tracking_id_;
+        res.state_desc = "Tracking";
       }
       else
       {
-        tracking_id_ = -1;
-        res.state = 0;
-        res.state_desc = "Currently not tracking any person";
-        res.current_tracking_id = tracking_id_;
+        // Currently, the MW does not have an API to check if tracking is disabled.
+        // So using the tracking_id_ variable to determine the same.
+        if (tracking_id_ != -1)
+        {
+          res.state = 2;
+          std::stringstream desc;
+          desc << "Tracking but tracking_id " << tracking_id_ << " not in frame.";
+          res.state_desc = desc.str();
+        }
+        else
+        {
+          res.state = 0;
+          res.state_desc = "Not Tracking";
+        }
       }
     }
     return true;
@@ -911,7 +919,7 @@ namespace realsense_person
         tracking_id_ = req.tracking_id;
         person_data->StartTracking(tracking_id_);
         res.status = 0;
-        res.status_desc = "Started tracking person with tracking_id " + std::to_string(tracking_id_);
+        res.status_desc = "Started Tracking";
       }
     }
     return true;
@@ -937,13 +945,13 @@ namespace realsense_person
       if (tracking_id_ == -1)
       {
         res.status = 1;
-        res.status_desc = "Already not tracking";
+        res.status_desc = "Already not Tracking";
       }
       else
       {
         person_data->StopTracking(tracking_id_);
         res.status = 0;
-        res.status_desc = "Stopped tracking person with tracking_id " + std::to_string(tracking_id_);
+        res.status_desc = "Stopped Tracking";
         tracking_id_ = -1;
       }
     }
