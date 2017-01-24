@@ -89,7 +89,7 @@ TEST(RealsensePerson, RegisterService)
 {
   realsense_person::GetTrackingState get_tracking_state_service;
   g_get_tracking_state_client.call(get_tracking_state_service);
-  g_tracking_ids = get_tracking_state_service.response.detected_tracking_ids;
+  g_tracking_ids = get_tracking_state_service.response.tracking_ids;
 
   bool registered_all = true;
 

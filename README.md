@@ -77,6 +77,7 @@ Install the package and its dependent packages as follows:
 `detection_data` ([realsense_person/PersonDetection](msg/PersonDetection.msg))
 
    Contains the basic information of all the people detected in a frame.
+   If a person is being tracked, it will return the information of only that person.
 
 `detection_image` ([sensor_msgs/Image](http://docs.ros.org/api/sensor_msgs/html/msg/Image.html))
 
@@ -86,7 +87,7 @@ Install the package and its dependent packages as follows:
 
    Contains detailed information of the person being tracked.
    <b>Note:</b> Use the "start_tracking_person" service to start tracking a person. If a person is not being tracked,
-   this topic will not have any data.
+   this topic will not be published.
 
    The information contained in this topic can be controlled using the parameters
    "enable_head_bounding_box", "enable_face_landmarks", "enable_gestures"
@@ -103,8 +104,8 @@ Install the package and its dependent packages as follows:
 ###Services
 `get_tracking_state` ([realsense_person/GetTrackingState](srv/GetTrackingState.srv))
 
-   Returns the tracking state which includes the tracking_id of the person currently being tracked
-   along with a list of tracking_ids of all the people detected in the latest frame.
+   Returns the tracking state. If nobody is being tracked, it will return the list of tracking_ids of all the detected people.
+   If a person is being tracked, it will return the tracking_id of just that person.
 
 `register_person` ([realsense_person/Register](srv/Register.srv))
 
