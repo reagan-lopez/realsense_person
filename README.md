@@ -135,15 +135,11 @@ Refer to the defintion at ([Custom Messages](msg/)).
 `subscribe_rate` (default: 30)
 
    Controls the subscription rate of the color and depth topics.
+   To reduce latency, the user is not given a separate rate control for publishing topics.
+   Instead, the package will try to publish topics at the subscribe_rate.
+   <b>Note:</b> The latency in publishing messages is also proportional to the features enabled by the user.
 
 ###Dynamic Parameters
-`detection_rate` (default: 30)
-
-   Controls the publish rate of the detection topics.
-
-`tracking_rate` (default: 30)
-
-   Controls the publish rate of the tracking topics.
 
 `enable_recognition` (default: true)
 
