@@ -45,9 +45,6 @@ namespace realsense_person
     projection_interface_ = nullptr;
     caminfo_disconnected_ = false;
     tracking_id_ = -1;
-    current_time_ = 0.0;
-    last_detection_time_ = 0.0;
-    last_tracking_time_ = 0.0;
     publish_detection_ = false;
     publish_detection_image_ = false;
     publish_tracking_ = false;
@@ -102,12 +99,6 @@ namespace realsense_person
    */
   void PersonNodelet::dynamicReconfCallback(realsense_person::person_paramsConfig &config, uint32_t level)
   {
-    ROS_INFO_STREAM(nodelet_name_ << " - Setting detection rate to " << config.detection_rate);
-    detection_rate_ = config.detection_rate;
-
-    ROS_INFO_STREAM(nodelet_name_ << " - Setting tracking rate to " << config.tracking_rate);
-    tracking_rate_ = config.tracking_rate;
-
     if ((config.enable_recognition) &&
         (!pt_video_module_->QueryConfiguration()->QueryRecognition()->IsEnabled()))
     {
@@ -371,19 +362,10 @@ namespace realsense_person
 
     processFrame(sample_set);
 
-    current_time_ = (std::chrono::duration_cast<std::chrono::milliseconds>
-        (std::chrono::system_clock::now().time_since_epoch()).count() / 1000.00);
-    int current_detection_rate = 1.0 / (double)(current_time_ - last_detection_time_);
-    int current_tracking_rate = 1.0 / (double)(current_time_ - last_tracking_time_);
-
-    publish_detection_ = ((detection_pub_.getNumSubscribers() > 0) &&
-        (current_detection_rate <= detection_rate_));
-    publish_detection_image_ = ((detection_image_pub_.getNumSubscribers() > 0) &&
-        (current_detection_rate <= detection_rate_));
-    publish_tracking_ = ((tracking_id_ != -1) && (tracking_pub_.getNumSubscribers() > 0) &&
-        (current_tracking_rate <= tracking_rate_));
-    publish_tracking_image_ = ((tracking_id_ != -1) && (tracking_image_pub_.getNumSubscribers() > 0) &&
-        (current_tracking_rate <= tracking_rate_));
+    publish_detection_ = (detection_pub_.getNumSubscribers() > 0);
+    publish_detection_image_ = (detection_image_pub_.getNumSubscribers() > 0);
+    publish_tracking_ = ((tracking_id_ != -1) && (tracking_pub_.getNumSubscribers() > 0));
+    publish_tracking_image_ = ((tracking_id_ != -1) && (tracking_image_pub_.getNumSubscribers() > 0));
 
     if (publish_detection_ || publish_detection_image_ || publish_tracking_ || publish_tracking_image_)
     {
@@ -394,7 +376,7 @@ namespace realsense_person
       }
       else
       {
-        prepareMsgs(person_data, color_image, current_time_);
+        prepareMsgs(person_data, color_image);
       }
     }
 
@@ -446,7 +428,7 @@ namespace realsense_person
    * Prepare and publish messages.
    */
   void PersonNodelet::prepareMsgs(PersonModule::PersonTrackingData* person_data,
-      const sensor_msgs::ImageConstPtr& color_image, double msg_received_time)
+      const sensor_msgs::ImageConstPtr& color_image)
   {
     PersonDetection detection_msg;
     PersonTracking tracking_msg;
@@ -464,13 +446,11 @@ namespace realsense_person
 
         if (publish_detection_ || publish_detection_image_)
         {
-          last_detection_time_ = msg_received_time;
           detection_msg.persons.push_back(person_msg);
         }
 
         if ((publish_tracking_ || publish_tracking_image_) && (tracking_id_ == detection_data->QueryId()))
         {
-          last_tracking_time_ = msg_received_time;
           tracking_msg.person = person_msg;
           tracking_msg.face = prepareFaceMsg(single_person_data);
           tracking_msg.body = prepareBodyMsg(single_person_data);

@@ -93,12 +93,7 @@ namespace realsense_person
     std::string nodelet_name_;
     int tracking_id_;
     int subscribe_rate_;
-    int detection_rate_;
-    int tracking_rate_;
 
-    double current_time_;
-    double last_detection_time_;
-    double last_tracking_time_;
     bool publish_detection_;
     bool publish_detection_image_;
     bool publish_tracking_;
@@ -170,8 +165,7 @@ namespace realsense_person
         const sensor_msgs::ImageConstPtr& image, RSCore::correlated_sample_set &sample_set);
     void processFrame(RSCore::correlated_sample_set sample_set);
     PersonModule::PersonTrackingData* getPersonData();
-    void prepareMsgs(PersonModule::PersonTrackingData* person_data, const sensor_msgs::ImageConstPtr& color_image,
-        double msg_received_time);
+    void prepareMsgs(PersonModule::PersonTrackingData* person_data, const sensor_msgs::ImageConstPtr& color_image);
     Person preparePersonMsg(PersonModule::PersonTrackingData::PersonTracking* detection_data);
     Face prepareFaceMsg(PersonModule::PersonTrackingData::Person* single_person_data);
     Body prepareBodyMsg(PersonModule::PersonTrackingData::Person* single_person_data);
